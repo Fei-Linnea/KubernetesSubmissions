@@ -1,5 +1,5 @@
 {
-  "name": "log-output",
+  "name": "log-output-writer",
   "version": "1.0.0",
   "private": true,
   "description": "DevOps with Kubernetes log output exercise application",
