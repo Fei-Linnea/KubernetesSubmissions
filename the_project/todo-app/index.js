@@ -80,20 +80,139 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, {
       "Content-Type": "text/html",
     });
+
     res.end(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-          <meta charset="UTF-8">
-          <title>Todo App</title>
-      </head>
-      <body>
-          <h1>Todo App</h1>
-          <img src="/image" alt="Random image" width="600">
-          <p>DevOps with Kubernetes 2026</p>
-      </body>
-      </html>
-      `);
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+  <meta charset="UTF-8">
+  <title>Todo App</title>
+
+  <style>
+
+  body{
+      font-family: Arial, Helvetica, sans-serif;
+      background:#f5f5f5;
+      margin:0;
+  }
+
+  .container{
+      max-width:700px;
+      margin:40px auto;
+      text-align:center;
+  }
+
+  img{
+      width:100%;
+      border-radius:8px;
+      margin-bottom:25px;
+  }
+
+  .todo-form{
+      display:flex;
+      justify-content:center;
+      margin-bottom:35px;
+  }
+
+  input[type=text]{
+      flex:1;
+      padding:12px;
+      font-size:16px;
+      border:2px solid #2e7d32;
+      border-right:none;
+      border-radius:6px 0 0 6px;
+      outline:none;
+  }
+
+  button{
+      padding:12px 26px;
+      font-size:16px;
+      border:none;
+      background:#2e7d32;
+      color:white;
+      cursor:pointer;
+      border-radius:0 6px 6px 0;
+  }
+
+  button:hover{
+      background:#256b2a;
+  }
+
+  h2{
+      text-align:center;
+      margin-bottom:15px;
+  }
+
+  .todo{
+      display:flex;
+      align-items:center;
+      background:white;
+      margin-bottom:12px;
+      border-radius:8px;
+      overflow:hidden;
+      box-shadow:0 1px 3px rgba(0,0,0,.1);
+  }
+
+  .todo-bar{
+      width:8px;
+      background:#2e7d32;
+      align-self:stretch;
+  }
+
+  .todo-text{
+      padding:16px;
+      text-align:left;
+  }
+
+  </style>
+
+  </head>
+
+  <body>
+
+  <div class="container">
+
+  <h1>Todo App</h1>
+
+  <img src="/image" alt="Random image">
+
+  <div class="todo-form">
+
+  <input
+  type="text"
+  maxlength="140"
+  placeholder="Enter a new todo (max 140 characters)">
+
+  <button>Send</button>
+
+  </div>
+
+  <h2>Todos</h2>
+
+  <div class="todo">
+  <div class="todo-bar"></div>
+  <div class="todo-text">
+  Learn Kubernetes basics
+  </div>
+  </div>
+
+  <div class="todo">
+  <div class="todo-bar"></div>
+  <div class="todo-text">
+  Deploy application to cluster
+  </div>
+  </div>
+
+  <div class="todo">
+  <div class="todo-bar"></div>
+  <div class="todo-text">
+  Configure persistent volumes
+  </div>
+  </div>
+  </div>
+  </body>
+  </html>
+  `);
     return;
   }
   res.writeHead(404);
