@@ -21,3 +21,4 @@
 ### Chapter 3
 
 - [2.1.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/2.1)
+- [2.2.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/2.2)
