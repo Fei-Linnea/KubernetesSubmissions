@@ -3,15 +3,20 @@ const fs = require("fs");
 
 const PORT = process.env.PORT || 3000;
 const FILE = "/usr/src/app/files/output.txt";
-const COUNTER_FILE = "/usr/src/app/files/counter.txt";
+const PINGPONG_URL = "http://pingpong-svc/pings";
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   if (req.url === "/") {
     try {
       const log = fs.readFileSync(FILE, "utf8").trim();
       let counter = "0";
-      if (fs.existsSync(COUNTER_FILE)) {
-        counter = fs.readFileSync(COUNTER_FILE, "utf8").trim();
+      try {
+        const response = await fetch(PINGPONG_URL);
+        if (response.ok) {
+          counter = await response.text();
+        }
+      } catch (err) {
+        console.error("Failed to fetch ping count:", err.message);
       }
       res.writeHead(200, {
         "Content-Type": "text/plain",
