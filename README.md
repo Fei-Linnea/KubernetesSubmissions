@@ -20,4 +20,4 @@
 
 ### Chapter 3
 
-- X
+- [2.1.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/2.1)
