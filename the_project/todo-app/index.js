@@ -9,19 +9,16 @@ const IMAGE_FILE = path.join(IMAGE_DIR, "image.jpg");
 const TIMESTAMP_FILE = path.join(IMAGE_DIR, "image.timestamp");
 
 const IMAGE_URL = "https://picsum.photos/1200";
+const TODO_BACKEND = "http://todo-backend-svc:2345/todos";
+
 const TEN_MINUTES = 10 * 60 * 1000;
 
 let downloadInProgress = false;
 
 async function downloadImage() {
-  if (downloadInProgress) {
-    return;
-  }
-
+  if (downloadInProgress) return;
   downloadInProgress = true;
-
   try {
-    console.log("Downloading new image...");
     const response = await fetch(IMAGE_URL);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -30,9 +27,8 @@ async function downloadImage() {
     fs.mkdirSync(IMAGE_DIR, { recursive: true });
     fs.writeFileSync(IMAGE_FILE, buffer);
     fs.writeFileSync(TIMESTAMP_FILE, Date.now().toString());
-    console.log("Image updated.");
   } catch (err) {
-    console.error("Image download failed:", err.message);
+    console.error(err.message);
   } finally {
     downloadInProgress = false;
   }
@@ -43,15 +39,42 @@ function imageExists() {
 }
 
 function imageIsExpired() {
-  if (!imageExists()) {
-    return true;
-  }
+  if (!imageExists()) return true;
   const timestamp = Number(fs.readFileSync(TIMESTAMP_FILE, "utf8"));
-
   return Date.now() - timestamp >= TEN_MINUTES;
 }
 
+async function getTodos() {
+  try {
+    const response = await fetch(TODO_BACKEND);
+    if (!response.ok) {
+      return [];
+    }
+    return await response.json();
+  } catch {
+    return [];
+  }
+}
+
 const server = http.createServer(async (req, res) => {
+  if (req.method === "POST" && req.url === "/todos") {
+    let body = "";
+    req.on("data", chunk => body += chunk);
+    req.on("end", async () => {
+      await fetch(TODO_BACKEND, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body,
+      });
+      res.writeHead(302, {
+        Location: "/",
+      });
+      res.end();
+    });
+    return;
+  }
   if (req.url === "/image") {
     if (!imageExists()) {
       await downloadImage();
@@ -67,7 +90,7 @@ const server = http.createServer(async (req, res) => {
       res.end(image);
     } catch {
       res.writeHead(500);
-      res.end("Image unavailable");
+      res.end();
     }
     return;
   }
@@ -77,142 +100,134 @@ const server = http.createServer(async (req, res) => {
     } else if (imageIsExpired()) {
       downloadImage();
     }
+
+    const todos = await getTodos();
+
+    const todoHtml = todos.map(todo => `
+      <div class="todo">
+        <div class="todo-bar"></div>
+        <div class="todo-text">${todo}</div>
+      </div>
+    `).join("");
     res.writeHead(200, {
       "Content-Type": "text/html",
     });
-
     res.end(`
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-  <meta charset="UTF-8">
-  <title>Todo App</title>
+<!DOCTYPE html>
+<html>
 
-  <style>
+<head>
 
-  body{
-      font-family: Arial, Helvetica, sans-serif;
-      background:#f5f5f5;
-      margin:0;
-  }
+<meta charset="UTF-8">
 
-  .container{
-      max-width:700px;
-      margin:40px auto;
-      text-align:center;
-  }
+<title>Todo App</title>
 
-  img{
-      width:100%;
-      border-radius:8px;
-      margin-bottom:25px;
-  }
+<style>
 
-  .todo-form{
-      display:flex;
-      justify-content:center;
-      margin-bottom:35px;
-  }
+body{
+font-family:Arial,Helvetica,sans-serif;
+background:#f5f5f5;
+margin:0;
+}
 
-  input[type=text]{
-      flex:1;
-      padding:12px;
-      font-size:16px;
-      border:2px solid #2e7d32;
-      border-right:none;
-      border-radius:6px 0 0 6px;
-      outline:none;
-  }
+.container{
+max-width:700px;
+margin:40px auto;
+text-align:center;
+}
 
-  button{
-      padding:12px 26px;
-      font-size:16px;
-      border:none;
-      background:#2e7d32;
-      color:white;
-      cursor:pointer;
-      border-radius:0 6px 6px 0;
-  }
+img{
+width:100%;
+border-radius:8px;
+margin-bottom:25px;
+}
 
-  button:hover{
-      background:#256b2a;
-  }
+.todo-form{
+display:flex;
+justify-content:center;
+margin-bottom:35px;
+}
 
-  h2{
-      text-align:center;
-      margin-bottom:15px;
-  }
+input[type=text]{
+flex:1;
+padding:12px;
+font-size:16px;
+border:2px solid #2e7d32;
+border-right:none;
+border-radius:6px 0 0 6px;
+outline:none;
+}
 
-  .todo{
-      display:flex;
-      align-items:center;
-      background:white;
-      margin-bottom:12px;
-      border-radius:8px;
-      overflow:hidden;
-      box-shadow:0 1px 3px rgba(0,0,0,.1);
-  }
+button{
+padding:12px 26px;
+font-size:16px;
+border:none;
+background:#2e7d32;
+color:white;
+cursor:pointer;
+border-radius:0 6px 6px 0;
+}
 
-  .todo-bar{
-      width:8px;
-      background:#2e7d32;
-      align-self:stretch;
-  }
+button:hover{
+background:#256b2a;
+}
 
-  .todo-text{
-      padding:16px;
-      text-align:left;
-  }
+.todo{
+display:flex;
+align-items:center;
+background:white;
+margin-bottom:12px;
+border-radius:8px;
+overflow:hidden;
+box-shadow:0 1px 3px rgba(0,0,0,.1);
+}
 
-  </style>
+.todo-bar{
+width:8px;
+background:#2e7d32;
+align-self:stretch;
+}
 
-  </head>
+.todo-text{
+padding:16px;
+text-align:left;
+}
 
-  <body>
+</style>
 
-  <div class="container">
+</head>
 
-  <h1>Todo App</h1>
+<body>
 
-  <img src="/image" alt="Random image">
+<div class="container">
 
-  <div class="todo-form">
+<h1>Todo App</h1>
 
-  <input
-  type="text"
-  maxlength="140"
-  placeholder="Enter a new todo (max 140 characters)">
+<img src="/image">
 
-  <button>Send</button>
+<form class="todo-form" method="POST" action="/todos">
 
-  </div>
+<input
+type="text"
+name="todo"
+maxlength="140"
+required
+placeholder="Enter a new todo (max 140 characters)">
 
-  <h2>Todos</h2>
+<button type="submit">Send</button>
 
-  <div class="todo">
-  <div class="todo-bar"></div>
-  <div class="todo-text">
-  Learn Kubernetes basics
-  </div>
-  </div>
+</form>
 
-  <div class="todo">
-  <div class="todo-bar"></div>
-  <div class="todo-text">
-  Deploy application to cluster
-  </div>
-  </div>
+<h2>Todos</h2>
 
-  <div class="todo">
-  <div class="todo-bar"></div>
-  <div class="todo-text">
-  Configure persistent volumes
-  </div>
-  </div>
-  </div>
-  </body>
-  </html>
-  `);
+${todoHtml}
+
+</div>
+
+</body>
+
+</html>
+`);
     return;
   }
   res.writeHead(404);
@@ -220,5 +235,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+  console.log(`Todo app listening on ${PORT}`);
 });
