@@ -16,6 +16,9 @@ spec:
       volumes:
         - name: shared-output
           emptyDir: {}
+        - name: config-volume
+          configMap:
+            name: log-output-config
       containers:
         - name: writer
           image: log-output-writer:latest
@@ -28,6 +31,14 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 3000
+          env:
+            - name: MESSAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: log-output-config
+                  key: MESSAGE
           volumeMounts:
             - name: shared-output
               mountPath: /usr/src/app/files
+            - name: config-volume
+              mountPath: /usr/src/app/config
