@@ -1,5 +1,6 @@
 const http = require("http");
 const PORT = process.env.PORT || 3000;
+const MAX_LENGTH = Number(process.env.MAX_LENGTH) || 140;
 const todos = [
   "Learn Kubernetes basics",
   "Deploy application to cluster",
@@ -24,7 +25,7 @@ const server = http.createServer((req, res) => {
     req.on("end", () => {
       const params = new URLSearchParams(body);
       const todo = (params.get("todo") || "").trim();
-      if (todo.length > 0 && todo.length <= 140) {
+      if (todo.length > 0 && todo.length <= MAX_LENGTH) {
         todos.push(todo);
       }
       res.writeHead(201);

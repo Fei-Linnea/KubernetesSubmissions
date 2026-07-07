@@ -4,14 +4,13 @@ const path = require("path");
 
 const PORT = process.env.PORT || 3000;
 
-const IMAGE_DIR = "/usr/src/app/files";
+const IMAGE_DIR = process.env.IMAGE_DIR;
 const IMAGE_FILE = path.join(IMAGE_DIR, "image.jpg");
 const TIMESTAMP_FILE = path.join(IMAGE_DIR, "image.timestamp");
 
-const IMAGE_URL = "https://picsum.photos/1200";
-const TODO_BACKEND = "http://todo-backend-svc:2345/todos";
-
-const TEN_MINUTES = 10 * 60 * 1000;
+const IMAGE_URL = process.env.IMAGE_URL;
+const TODO_BACKEND = process.env.TODO_BACKEND;
+const TEN_MINUTES = Number(process.env.IMAGE_CACHE_MINUTES) * 60 * 1000;
 
 let downloadInProgress = false;
 

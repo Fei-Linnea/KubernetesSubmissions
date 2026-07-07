@@ -24,6 +24,26 @@ spec:
           env:
             - name: PORT
               value: "3000"
+            - name: IMAGE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: todo-app-config
+                  key: IMAGE_URL
+            - name: IMAGE_CACHE_MINUTES
+              valueFrom:
+                configMapKeyRef:
+                  name: todo-app-config
+                  key: IMAGE_CACHE_MINUTES
+            - name: TODO_BACKEND
+              valueFrom:
+                configMapKeyRef:
+                  name: todo-app-config
+                  key: TODO_BACKEND
+            - name: IMAGE_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: todo-app-config
+                  key: IMAGE_DIR
           volumeMounts:
             - name: todo-storage
               mountPath: /usr/src/app/files
