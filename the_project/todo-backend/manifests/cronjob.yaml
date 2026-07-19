@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: todo-generator
+  namespace: project
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: generator
+            image: curlimages/curl:latest
+            command:
+              - /bin/sh
+              - -c
+              - |
+                echo "Fetching random Wikipedia article..."
+                RESPONSE=$(curl -s -I -L -o /dev/null -w '%{url_effective}' https://en.wikipedia.org/wiki/Special:Random)
+                URL=$(echo $RESPONSE | cut -d'?' -f1)
+                TODO="Read ${URL}"
+                curl -X POST http://todo-backend-svc:2345/todos \
+                  -H "Content-Type: application/x-www-form-urlencoded" \
+                  -d "todo=${TODO}"
+                echo "Added todo: ${TODO}"
+          restartPolicy: OnFailure
