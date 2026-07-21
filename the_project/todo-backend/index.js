@@ -42,20 +42,26 @@ async function getTodos() {
 
 async function addTodo(text) {
   try {
+    if (text.length > MAX_LENGTH) {
+      console.log(`[BLOCKED] Todo too long: "${text}" (${text.length} chars, max ${MAX_LENGTH})`);
+      return { success: false, error: "Todo too long" };
+    }
     await pool.query(
       "INSERT INTO todos (text) VALUES ($1)",
       [text]
     );
-    return true;
+    console.log(`[SUCCESS] Todo added: "${text}"`);
+    return { success: true };
   } catch (err) {
-    console.error("Error adding todo:", err);
-    return false;
+    console.error(`[ERROR] Failed to add todo: "${text}"`, err);
+    return { success: false, error: err.message };
   }
 }
 
 const server = http.createServer(async (req, res) => {
   // GET /todos
   if (req.method === "GET" && req.url === "/todos") {
+    console.log(`[REQUEST] GET /todos`);
     const todos = await getTodos();
     res.writeHead(200, {
       "Content-Type": "application/json",
@@ -63,7 +69,6 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(todos));
     return;
   }
-  // POST /todos
   if (req.method === "POST" && req.url === "/todos") {
     let body = "";
     req.on("data", chunk => {
@@ -72,8 +77,15 @@ const server = http.createServer(async (req, res) => {
     req.on("end", async () => {
       const params = new URLSearchParams(body);
       const todo = (params.get("todo") || "").trim();
-      if (todo.length > 0 && todo.length <= MAX_LENGTH) {
-        await addTodo(todo);
+      console.log(`[REQUEST] POST /todos: "${todo}" (${todo.length} chars)`);
+      if (todo.length === 0) {
+        console.log(`[BLOCKED] Empty todo rejected`);
+        res.writeHead(400);
+        res.end();
+        return;
+      }
+      const result = await addTodo(todo);
+      if (result.success) {
         res.writeHead(201);
       } else {
         res.writeHead(400);
@@ -82,6 +94,7 @@ const server = http.createServer(async (req, res) => {
     });
     return;
   }
+  console.log(`[REQUEST] 404: ${req.method} ${req.url}`);
   res.writeHead(404);
   res.end();
 });
@@ -90,6 +103,7 @@ initializeDatabase().then(() => {
   server.listen(PORT, () => {
     console.log(`Todo backend listening on ${PORT}`);
     console.log(`PostgreSQL host: ${process.env.POSTGRES_HOST || "postgres-todo-svc"}`);
+    console.log(`Max todo length: ${MAX_LENGTH} characters`);
   });
 }).catch(err => {
   console.error("Failed to initialize database:", err);
