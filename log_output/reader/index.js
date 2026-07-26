@@ -7,7 +7,22 @@ const INFO_FILE = "/usr/src/app/config/information.txt";
 const PINGPONG_URL = "http://pingpong-svc/pings";
 
 const server = http.createServer(async (req, res) => {
-  if (req.url === "/") {
+  if (req.url === "/" && req.method === "GET") {
+    try {
+      fs.readFileSync(FILE, "utf8");
+      res.writeHead(200, {
+        "Content-Type": "text/plain",
+      });
+      res.end("OK");
+    } catch {
+      res.writeHead(200, {
+        "Content-Type": "text/plain",
+      });
+      res.end("OK");
+    }
+    return;
+  }
+  if (req.url === "/log" && req.method === "GET") {
     try {
       const log = fs.readFileSync(FILE, "utf8").trim();
       let info = "";

@@ -21,14 +21,14 @@ spec:
             name: log-output-config
       containers:
         - name: writer
-          image: log-output-writer:latest
-          imagePullPolicy: Never
+          image: flhaka/log-output-writer:latest
+          imagePullPolicy: Always
           volumeMounts:
             - name: shared-output
               mountPath: /usr/src/app/files
         - name: reader
-          image: log-output-reader:latest
-          imagePullPolicy: Never
+          image: flhaka/log-output-reader:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           env:

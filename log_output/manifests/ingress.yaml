@@ -21,3 +21,10 @@ spec:
                 name: pingpong-svc
                 port:
                   number: 80
+          - path: /log
+            pathType: Prefix
+            backend:
+              service:
+                name: log-output-svc
+                port:
+                  number: 80
