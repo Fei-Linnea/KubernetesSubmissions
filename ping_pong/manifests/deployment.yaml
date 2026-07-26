@@ -15,20 +15,10 @@ spec:
     spec:
       containers:
         - name: pingpong
-          image: pingpong:latest
-          imagePullPolicy: Never
+          image: flhaka/pingpong:latest
+          imagePullPolicy: Always
           env:
           - name: PORT
             value: "3001"
-          - name: POSTGRES_HOST
-            value: "postgres-svc"
-          - name: POSTGRES_PORT
-            value: "5432"
-          - name: POSTGRES_USER
-            value: "user"
-          - name: POSTGRES_PASSWORD
-            value: "password"
-          - name: POSTGRES_DB
-            value: "mydatabase"
           ports:
             - containerPort: 3001
