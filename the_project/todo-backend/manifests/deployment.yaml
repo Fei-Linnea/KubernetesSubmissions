@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: todo-backend
-          image: todo-backend:latest
-          imagePullPolicy: Never
+          image: TODO-BACKEND/IMAGE
+          imagePullPolicy: Always
           env:
             - name: PORT
               value: "3000"

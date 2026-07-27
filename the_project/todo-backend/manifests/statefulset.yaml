@@ -35,6 +35,8 @@ spec:
                 secretKeyRef:
                   name: postgres-todo-secret
                   key: POSTGRES_DB
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           volumeMounts:
             - name: postgres-todo-storage
               mountPath: /var/lib/postgresql/data
@@ -67,7 +69,6 @@ spec:
         name: postgres-todo-storage
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: local-path
         resources:
           requests:
             storage: 1Gi
