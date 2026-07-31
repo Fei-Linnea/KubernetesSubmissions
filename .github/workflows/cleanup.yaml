@@ -13,7 +13,6 @@ env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GKE_CLUSTER: dwk-cluster
   GKE_ZONE: europe-north1-b
-  BRANCH: ${{ github.ref_name }}
 
 jobs:
   cleanup:
@@ -42,6 +41,7 @@ jobs:
 
       - name: 'Delete namespace'
         run: |
+          BRANCH="${{ github.event.ref }}"
           if [ "$BRANCH" = "main" ]; then
             echo "Skipping deletion of main environment (project namespace)"
             exit 0
@@ -49,7 +49,7 @@ jobs:
           NAMESPACE="$BRANCH"
           echo "Deleting namespace: $NAMESPACE"
           if kubectl get namespace $NAMESPACE &> /dev/null; then
-            kubectl delete namespace $NAMESPACE
+            kubectl delete namespace "$NAMESPACE" --ignore-not-found=true
             echo "Namespace $NAMESPACE deleted successfully"
           else
             echo "Namespace $NAMESPACE does not exist, nothing to delete"
