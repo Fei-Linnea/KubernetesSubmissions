@@ -53,7 +53,8 @@ jobs:
       - name: Build and push todo-app
         run: |
           cd the_project/todo-app
-          IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/todo-app:$BRANCH-$GITHUB_SHA"
+          SAFE_BRANCH=${BRANCH//\//-}
+          IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/todo-app:$SAFE_BRANCH-$GITHUB_SHA"
           docker build -t $IMAGE_TAG .
           docker push $IMAGE_TAG
           echo "TODO_APP_IMAGE=$IMAGE_TAG" >> $GITHUB_ENV
@@ -61,7 +62,8 @@ jobs:
       - name: Build and push todo-backend
         run: |
           cd the_project/todo-backend
-          IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/todo-backend:$BRANCH-$GITHUB_SHA"
+          SAFE_BRANCH=${BRANCH//\//-}
+          IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/todo-backend:$SAFE_BRANCH-$GITHUB_SHA"
           docker build -t $IMAGE_TAG .
           docker push $IMAGE_TAG
           echo "TODO_BACKEND_IMAGE=$IMAGE_TAG" >> $GITHUB_ENV

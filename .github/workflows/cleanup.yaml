@@ -1,0 +1,56 @@
+name: Cleanup environment on branch deletion
+
+on:
+  delete:
+    branches:
+      - '*'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+  GKE_CLUSTER: dwk-cluster
+  GKE_ZONE: europe-north1-b
+  BRANCH: ${{ github.ref_name }}
+
+jobs:
+  cleanup:
+    name: Delete environment
+    runs-on: ubuntu-latest
+    environment: GKE_PROJECT
+    
+    if: github.event.ref != 'refs/heads/main'
+
+    steps:
+      - name: 'Authenticate to Google Cloud'
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}"
+          service_account: "${{ secrets.SERVICE_ACCOUNT }}"
+
+      - name: 'Set up Cloud SDK'
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: 'Get GKE credentials'
+        uses: google-github-actions/get-gke-credentials@v3
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          project_id: ${{ env.PROJECT_ID }}
+          location: ${{ env.GKE_ZONE }}
+
+      - name: 'Delete namespace'
+        run: |
+          if [ "$BRANCH" = "main" ]; then
+            echo "Skipping deletion of main environment (project namespace)"
+            exit 0
+          fi
+          NAMESPACE="$BRANCH"
+          echo "Deleting namespace: $NAMESPACE"
+          if kubectl get namespace $NAMESPACE &> /dev/null; then
+            kubectl delete namespace $NAMESPACE
+            echo "Namespace $NAMESPACE deleted successfully"
+          else
+            echo "Namespace $NAMESPACE does not exist, nothing to delete"
+          fi
