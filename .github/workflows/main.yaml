@@ -71,11 +71,20 @@ jobs:
 
       - name: Deploy
         run: |-
+          if [ "$BRANCH" = "main" ]; then
+            NAMESPACE="project"
+          else
+            NAMESPACE="${BRANCH//\//-}"  # Korvaa / merkillä -
+          fi
+          echo "Deploying to namespace: $NAMESPACE"
+          kubectl create namespace $NAMESPACE || true
+          kubectl config set-context --current --namespace=$NAMESPACE
           cd the_project
+          kustomize edit set namespace $NAMESPACE
           kustomize edit set image TODO-APP/IMAGE=${{ env.TODO_APP_IMAGE }}
           kustomize edit set image TODO-BACKEND/IMAGE=${{ env.TODO_BACKEND_IMAGE }}
           kustomize build . | kubectl apply -f -
-          kubectl rollout status deployment/todo-app -n project
-          kubectl rollout status deployment/todo-backend -n project
-          kubectl get pods -n project
-          kubectl get services -n project
+          kubectl rollout status deployment/todo-app -n $NAMESPACE
+          kubectl rollout status deployment/todo-backend -n $NAMESPACE
+          kubectl get pods -n $NAMESPACE
+          kubectl get services -n $NAMESPACE
