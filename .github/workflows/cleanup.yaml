@@ -46,7 +46,7 @@ jobs:
             echo "Skipping deletion of main environment (project namespace)"
             exit 0
           fi
-          NAMESPACE="$BRANCH"
+          NAMESPACE="${BRANCH//\//-}"
           echo "Deleting namespace: $NAMESPACE"
           if kubectl get namespace $NAMESPACE &> /dev/null; then
             kubectl delete namespace "$NAMESPACE" --ignore-not-found=true
