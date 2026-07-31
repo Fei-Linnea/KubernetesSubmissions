@@ -13,8 +13,6 @@ env:
   GKE_ZONE: europe-north1-b
   REGISTRY: europe-north1-docker.pkg.dev
   REPOSITORY: my-repository
-  IMAGE: dwk-environments
-  SERVICE: dwk-environments
   BRANCH: ${{ github.ref_name }}
 
 jobs:
