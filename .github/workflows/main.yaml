@@ -2,6 +2,8 @@ name: Release application
 
 on:
   push:
+    branches:
+      - '**'
 
 permissions:
   contents: read
