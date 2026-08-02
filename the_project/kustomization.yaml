@@ -12,6 +12,7 @@ resources:
   - todo-backend/manifests/secret.yaml
   - todo-backend/manifests/statefulset.yaml
   - todo-backend/manifests/cronjob.yaml
+  - todo-backend/manifests/backup-cronjob.yaml
 namespace: project
 images:
   - name: TODO-APP/IMAGE

@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: todo-backup
+  namespace: project
+spec:
+  schedule: "0 0 * * *" 
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          volumes:
+            - name: service-account-key
+              secret:
+                secretName: storage-sa-key
+            - name: backup-data
+              emptyDir: {}
+          containers:
+            - name: backup
+              image: google/cloud-sdk:alpine
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+
+                  export GOOGLE_APPLICATION_CREDENTIALS=/var/run/secrets/sa-key/key.json
+                  DB_URL="postgres://todo_user:todo_password@postgres-todo-svc:5432/todos_db"
+
+                  echo "Installing PostgreSQL client..."
+                  apk add --no-cache postgresql-client
+
+                  BACKUP_FILE="/backup-data/backup-$(date +%Y-%m-%d-%H%M%S).sql"
+
+                  echo "Taking database backup..."
+                  pg_dump -v $DB_URL > $BACKUP_FILE
+
+                  if [ ! -s $BACKUP_FILE ]; then
+                    echo "ERROR: Backup file is empty!"
+                    exit 1
+                  fi
+
+                  echo "Uploading backup to Google Cloud Storage..."
+                  gcloud auth activate-service-account --key-file=/var/run/secrets/sa-key/key.json
+                  gsutil cp $BACKUP_FILE gs://todo-backup-1763825640/
+
+                  echo "Backup uploaded successfully"
+                  rm $BACKUP_FILE
+              volumeMounts:
+                - name: service-account-key
+                  mountPath: /var/run/secrets/sa-key
+                  readOnly: true
+                - name: backup-data
+                  mountPath: /backup-data
+          restartPolicy: OnFailure
