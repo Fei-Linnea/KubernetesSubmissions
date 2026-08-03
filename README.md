@@ -44,3 +44,4 @@
 - 3.9
 - [3.10.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/3.10)
 - [3.11.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/3.11)
+- [3.12.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/3.12)
