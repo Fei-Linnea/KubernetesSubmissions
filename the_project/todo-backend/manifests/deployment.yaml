@@ -17,6 +17,13 @@ spec:
         - name: todo-backend
           image: TODO-BACKEND/IMAGE
           imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "16Mi"
+              cpu: "15m"
+            limits:
+              memory: "64Mi"
+              cpu: "100m"
           env:
             - name: PORT
               value: "3000"
