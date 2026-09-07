@@ -26,6 +26,7 @@ spec:
           volumeMounts:
             - name: shared-output
               mountPath: /usr/src/app/files
+
         - name: reader
           image: flhaka/log-output-reader:latest
           imagePullPolicy: Always
@@ -42,3 +43,10 @@ spec:
               mountPath: /usr/src/app/files
             - name: config-volume
               mountPath: /usr/src/app/config
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3

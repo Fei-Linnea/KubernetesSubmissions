@@ -18,7 +18,24 @@ spec:
           image: flhaka/pingpong:latest
           imagePullPolicy: Always
           env:
-          - name: PORT
-            value: "3001"
+            - name: PORT
+              value: "3001"
+            - name: POSTGRES_HOST
+              value: "postgres-svc"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: "user"
+            - name: POSTGRES_PASSWORD
+              value: "password"
+            - name: POSTGRES_DB
+              value: "mydatabase"
           ports:
             - containerPort: 3001
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3

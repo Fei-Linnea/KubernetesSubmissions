@@ -27,6 +27,8 @@ spec:
               value: "password"
             - name: POSTGRES_DB
               value: "mydatabase"
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
@@ -62,12 +64,13 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 6
+
   volumeClaimTemplates:
     - metadata:
         name: postgres-storage
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: local-path
+        storageClassName: standard
         resources:
           requests:
             storage: 100Mi
@@ -81,8 +84,8 @@ metadata:
     app: postgres
 spec:
   ports:
-  - port: 5432
-    name: web
+    - port: 5432
+      name: web
   clusterIP: None
   selector:
     app: postgres
