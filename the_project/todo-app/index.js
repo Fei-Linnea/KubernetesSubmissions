@@ -13,6 +13,7 @@ const TODO_BACKEND = process.env.TODO_BACKEND;
 const TEN_MINUTES = Number(process.env.IMAGE_CACHE_MINUTES) * 60 * 1000;
 
 let downloadInProgress = false;
+let isHealthy = true;
 
 async function downloadImage() {
   if (downloadInProgress) return;
@@ -56,6 +57,29 @@ async function getTodos() {
 }
 
 const server = http.createServer(async (req, res) => {
+  if (req.url === "/healthz" && req.method === "GET") {
+    if (!isHealthy) {
+      res.writeHead(500, {
+        "Content-Type": "application/json",
+      });
+      res.end(JSON.stringify({ status: "unhealthy" }));
+      return;
+    }
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+    });
+    res.end(JSON.stringify({ status: "ok" }));
+    return;
+  }
+  if (req.url === "/break" && req.method === "POST") {
+    isHealthy = false;
+    console.log("App broken by user request");
+    res.writeHead(302, {
+      Location: "/",
+    });
+    res.end();
+    return;
+  }
   if (req.method === "POST" && req.url === "/todos") {
     let body = "";
     req.on("data", chunk => body += chunk);
@@ -108,6 +132,62 @@ const server = http.createServer(async (req, res) => {
         <div class="todo-text">${todo}</div>
       </div>
     `).join("");
+
+    if (!isHealthy) {
+      res.writeHead(200, {
+        "Content-Type": "text/html",
+      });
+      res.end(`
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Todo App</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .failure-banner {
+      background: #ffebee;
+      border: 4px solid #d32f2f;
+      border-radius: 12px;
+      padding: 40px 60px;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(211, 47, 47, 0.3);
+    }
+
+    .failure-title {
+      font-size: 32px;
+      font-weight: bold;
+      color: #d32f2f;
+    }
+
+    .failure-message {
+      font-size: 18px;
+      color: #333;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="failure-banner">
+    <div class="failure-title">System Failure</div>
+    <div class="failure-message">The Todo App is currently unhealthy. Please wait for recovery.</div>
+  </div>
+</body>
+</html>
+      `);
+      return;
+    }
+
     res.writeHead(200, {
       "Content-Type": "text/html",
     });
@@ -116,119 +196,130 @@ const server = http.createServer(async (req, res) => {
 <html>
 
 <head>
+  <meta charset="UTF-8">
+  <title>Todo App</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+    }
 
-<meta charset="UTF-8">
+    .container {
+      max-width: 700px;
+      margin: 40px auto;
+      text-align: center;
+    }
 
-<title>Todo App</title>
+    img {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 25px;
+    }
 
-<style>
+    .todo-form {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 35px;
+    }
 
-body{
-font-family:Arial,Helvetica,sans-serif;
-background:#f5f5f5;
-margin:0;
-}
+    input[type=text] {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      border: 2px solid #2e7d32;
+      border-right: none;
+      border-radius: 6px 0 0 6px;
+      outline: none;
+    }
 
-.container{
-max-width:700px;
-margin:40px auto;
-text-align:center;
-}
+    button {
+      padding: 12px 26px;
+      font-size: 16px;
+      border: none;
+      background: #2e7d32;
+      color: white;
+      cursor: pointer;
+      border-radius: 0 6px 6px 0;
+    }
 
-img{
-width:100%;
-border-radius:8px;
-margin-bottom:25px;
-}
+    button:hover {
+      background: #256b2a;
+    }
 
-.todo-form{
-display:flex;
-justify-content:center;
-margin-bottom:35px;
-}
+    .todo {
+      display: flex;
+      align-items: center;
+      background: white;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
 
-input[type=text]{
-flex:1;
-padding:12px;
-font-size:16px;
-border:2px solid #2e7d32;
-border-right:none;
-border-radius:6px 0 0 6px;
-outline:none;
-}
+    .todo-bar {
+      width: 8px;
+      background: #2e7d32;
+      align-self: stretch;
+    }
 
-button{
-padding:12px 26px;
-font-size:16px;
-border:none;
-background:#2e7d32;
-color:white;
-cursor:pointer;
-border-radius:0 6px 6px 0;
-}
+    .todo-text {
+      padding: 16px;
+      text-align: left;
+    }
 
-button:hover{
-background:#256b2a;
-}
+    .break-btn {
+      background: #d32f2f;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 30px;
+    }
 
-.todo{
-display:flex;
-align-items:center;
-background:white;
-margin-bottom:12px;
-border-radius:8px;
-overflow:hidden;
-box-shadow:0 1px 3px rgba(0,0,0,.1);
-}
-
-.todo-bar{
-width:8px;
-background:#2e7d32;
-align-self:stretch;
-}
-
-.todo-text{
-padding:16px;
-text-align:left;
-}
-
-</style>
-
+    .break-btn:hover {
+      background: #b71c1c;
+    }
+  </style>
 </head>
 
 <body>
 
 <div class="container">
 
-<h1>Todo App</h1>
+  <h1>Todo App</h1>
 
-<img src="/image">
+  <img src="/image">
 
-<form class="todo-form" method="POST" action="/todos">
+  <form class="todo-form" method="POST" action="/todos">
+    <input
+      type="text"
+      name="todo"
+      maxlength="140"
+      required
+      placeholder="Enter a new todo (max 140 characters)">
+    <button type="submit">Send</button>
+  </form>
 
-<input
-type="text"
-name="todo"
-maxlength="140"
-required
-placeholder="Enter a new todo (max 140 characters)">
+  <h2>Todos</h2>
 
-<button type="submit">Send</button>
+  ${todoHtml}
 
-</form>
-
-<h2>Todos</h2>
-
-${todoHtml}
+  <form method="POST" action="/break">
+    <button type="submit" class="break-btn">Break the app</button>
+  </form>
 
 </div>
 
 </body>
 
 </html>
-`);
+    `);
     return;
   }
+
   res.writeHead(404);
   res.end();
 });
