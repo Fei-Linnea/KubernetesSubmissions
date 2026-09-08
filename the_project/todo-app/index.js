@@ -17,13 +17,18 @@ let isHealthy = true;
 
 async function downloadImage() {
   if (downloadInProgress) return;
+
   downloadInProgress = true;
+
   try {
     const response = await fetch(IMAGE_URL);
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
+
     const buffer = Buffer.from(await response.arrayBuffer());
+
     fs.mkdirSync(IMAGE_DIR, { recursive: true });
     fs.writeFileSync(IMAGE_FILE, buffer);
     fs.writeFileSync(TIMESTAMP_FILE, Date.now().toString());
@@ -40,49 +45,86 @@ function imageExists() {
 
 function imageIsExpired() {
   if (!imageExists()) return true;
-  const timestamp = Number(fs.readFileSync(TIMESTAMP_FILE, "utf8"));
+
+  const timestamp = Number(
+    fs.readFileSync(TIMESTAMP_FILE, "utf8")
+  );
+
   return Date.now() - timestamp >= TEN_MINUTES;
 }
 
 async function getTodos() {
   try {
     const response = await fetch(TODO_BACKEND);
+
     if (!response.ok) {
       return [];
     }
+
     return await response.json();
   } catch {
     return [];
   }
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 const server = http.createServer(async (req, res) => {
+  // GET /healthz
   if (req.url === "/healthz" && req.method === "GET") {
     if (!isHealthy) {
       res.writeHead(500, {
         "Content-Type": "application/json",
       });
-      res.end(JSON.stringify({ status: "unhealthy" }));
+
+      res.end(JSON.stringify({
+        status: "unhealthy",
+      }));
+
       return;
     }
+
     res.writeHead(200, {
       "Content-Type": "application/json",
     });
-    res.end(JSON.stringify({ status: "ok" }));
+
+    res.end(JSON.stringify({
+      status: "ok",
+    }));
+
     return;
   }
+
+  // POST /break
   if (req.url === "/break" && req.method === "POST") {
     isHealthy = false;
+
     console.log("App broken by user request");
+
     res.writeHead(302, {
       Location: "/",
     });
+
     res.end();
+
     return;
   }
+
+  // POST /todos
   if (req.method === "POST" && req.url === "/todos") {
     let body = "";
-    req.on("data", chunk => body += chunk);
+
+    req.on("data", chunk => {
+      body += chunk;
+    });
+
     req.on("end", async () => {
       await fetch(TODO_BACKEND, {
         method: "POST",
@@ -91,32 +133,76 @@ const server = http.createServer(async (req, res) => {
         },
         body,
       });
+
       res.writeHead(302, {
         Location: "/",
       });
+
       res.end();
     });
+
     return;
   }
+
+  // PUT /todos/<id>
+  if (req.method === "PUT" && req.url.match(/^\/todos\/\d+$/)) {
+    const id = req.url.split("/")[2];
+
+    try {
+      const response = await fetch(`${TODO_BACKEND}/${id}`, {
+        method: "PUT",
+      });
+
+      if (!response.ok) {
+        res.writeHead(response.status);
+        res.end();
+
+        return;
+      }
+
+      const todo = await response.json();
+
+      res.writeHead(200, {
+        "Content-Type": "application/json",
+      });
+
+      res.end(JSON.stringify(todo));
+    } catch (err) {
+      console.error("Failed to mark todo as done:", err);
+
+      res.writeHead(500);
+      res.end();
+    }
+
+    return;
+  }
+
+  // GET /image
   if (req.url === "/image") {
     if (!imageExists()) {
       await downloadImage();
     } else if (imageIsExpired()) {
       downloadImage();
     }
+
     try {
       const image = fs.readFileSync(IMAGE_FILE);
+
       res.writeHead(200, {
         "Content-Type": "image/jpeg",
         "Cache-Control": "no-cache",
       });
+
       res.end(image);
     } catch {
       res.writeHead(500);
       res.end();
     }
+
     return;
   }
+
+  // GET /
   if (req.url === "/") {
     if (!imageExists()) {
       await downloadImage();
@@ -127,9 +213,29 @@ const server = http.createServer(async (req, res) => {
     const todos = await getTodos();
 
     const todoHtml = todos.map(todo => `
-      <div class="todo">
+      <div class="todo ${todo.done ? "todo-done" : ""}">
         <div class="todo-bar"></div>
-        <div class="todo-text">${todo}</div>
+
+        <div class="todo-text">
+          ${escapeHtml(todo.text)}
+        </div>
+
+        ${
+          todo.done
+            ? `
+              <div class="done-label">
+                Done
+              </div>
+            `
+            : `
+              <button
+                class="done-btn"
+                onclick="markDone(${todo.id})"
+              >
+                Mark done
+              </button>
+            `
+        }
       </div>
     `).join("");
 
@@ -137,12 +243,14 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, {
         "Content-Type": "text/html",
       });
+
       res.end(`
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <title>Todo App</title>
+
   <style>
     body {
       font-family: Arial, Helvetica, sans-serif;
@@ -177,20 +285,30 @@ const server = http.createServer(async (req, res) => {
     }
   </style>
 </head>
+
 <body>
+
   <div class="failure-banner">
-    <div class="failure-title">System Failure</div>
-    <div class="failure-message">The Todo App is currently unhealthy. Please wait for recovery.</div>
+    <div class="failure-title">
+      System Failure
+    </div>
+
+    <div class="failure-message">
+      The Todo App is currently unhealthy. Please wait for recovery.
+    </div>
   </div>
+
 </body>
 </html>
       `);
+
       return;
     }
 
     res.writeHead(200, {
       "Content-Type": "text/html",
     });
+
     res.end(`
 <!DOCTYPE html>
 <html>
@@ -198,6 +316,7 @@ const server = http.createServer(async (req, res) => {
 <head>
   <meta charset="UTF-8">
   <title>Todo App</title>
+
   <style>
     body {
       font-family: Arial, Helvetica, sans-serif;
@@ -233,7 +352,7 @@ const server = http.createServer(async (req, res) => {
       outline: none;
     }
 
-    button {
+    .todo-form button {
       padding: 12px 26px;
       font-size: 16px;
       border: none;
@@ -243,7 +362,7 @@ const server = http.createServer(async (req, res) => {
       border-radius: 0 6px 6px 0;
     }
 
-    button:hover {
+    .todo-form button:hover {
       background: #256b2a;
     }
 
@@ -254,18 +373,57 @@ const server = http.createServer(async (req, res) => {
       margin-bottom: 12px;
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
+      min-height: 58px;
     }
 
     .todo-bar {
       width: 8px;
       background: #2e7d32;
       align-self: stretch;
+      flex-shrink: 0;
     }
 
     .todo-text {
       padding: 16px;
       text-align: left;
+      flex: 1;
+    }
+
+    .done-btn {
+      margin-right: 12px;
+      padding: 9px 14px;
+      border: none;
+      border-radius: 5px;
+      background: #1976d2;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .done-btn:hover {
+      background: #1565c0;
+    }
+
+    .todo-done {
+      opacity: 0.65;
+    }
+
+    .todo-done .todo-bar {
+      background: #777;
+    }
+
+    .todo-done .todo-text {
+      text-decoration: line-through;
+      color: #777;
+    }
+
+    .done-label {
+      margin-right: 16px;
+      color: #2e7d32;
+      font-weight: bold;
+      font-size: 15px;
     }
 
     .break-btn {
@@ -299,8 +457,12 @@ const server = http.createServer(async (req, res) => {
       name="todo"
       maxlength="140"
       required
-      placeholder="Enter a new todo (max 140 characters)">
-    <button type="submit">Send</button>
+      placeholder="Enter a new todo (max 140 characters)"
+    >
+
+    <button type="submit">
+      Send
+    </button>
   </form>
 
   <h2>Todos</h2>
@@ -308,15 +470,37 @@ const server = http.createServer(async (req, res) => {
   ${todoHtml}
 
   <form method="POST" action="/break">
-    <button type="submit" class="break-btn">Break the app</button>
+    <button type="submit" class="break-btn">
+      Break the app
+    </button>
   </form>
 
 </div>
+
+<script>
+  async function markDone(id) {
+    try {
+      const response = await fetch("/todos/" + id, {
+        method: "PUT"
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to mark todo as done");
+      }
+
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      alert("Could not mark todo as done");
+    }
+  }
+</script>
 
 </body>
 
 </html>
     `);
+
     return;
   }
 
