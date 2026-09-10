@@ -1,12 +1,11 @@
 {
-  "name": "todo-backend",
+  "name": "broadcaster",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "pg": "^8.16.3",
     "nats": "^2.29.3"
   }
 }

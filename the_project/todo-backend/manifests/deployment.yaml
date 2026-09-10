@@ -57,3 +57,5 @@ spec:
                 secretKeyRef:
                   name: postgres-todo-secret
                   key: POSTGRES_DB
+            - name: NATS_URL
+              value: "nats://my-nats.nats.svc.cluster.local:4222"
