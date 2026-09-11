@@ -13,6 +13,13 @@ const QUEUE_GROUP = "broadcasters";
 const sc = StringCodec();
 
 async function sendToDiscord(message) {
+  if (!DISCORD_WEBHOOK_URL) {
+    console.log(
+      "DISCORD_WEBHOOK_URL is not set, skipping Discord notification"
+    );
+    return;
+  }
+
   const response = await fetch(DISCORD_WEBHOOK_URL, {
     method: "POST",
     headers: {
@@ -33,9 +40,11 @@ async function sendToDiscord(message) {
 }
 
 async function main() {
-  if (!DISCORD_WEBHOOK_URL) {
-    throw new Error(
-      "DISCORD_WEBHOOK_URL is not set"
+  if (DISCORD_WEBHOOK_URL) {
+    console.log("Discord webhook is configured");
+  } else {
+    console.log(
+      "Discord webhook is not configured, messages will only be logged"
     );
   }
 
@@ -78,7 +87,11 @@ async function main() {
 
       await sendToDiscord(discordMessage);
 
-      console.log("Message sent to Discord");
+      if (DISCORD_WEBHOOK_URL) {
+        console.log("Message sent to Discord");
+      } else {
+        console.log("Message logged only (staging mode)");
+      }
     } catch (err) {
       console.error(
         "Failed to process NATS message:",
