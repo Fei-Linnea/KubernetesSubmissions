@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/Fei-Linnea/KubernetesSubmissions
+    repoURL: https://github.com/Fei-Linnea/KubernetesSubmissions-config
     path: the_project/overlays/production
     targetRevision: HEAD
   destination:
