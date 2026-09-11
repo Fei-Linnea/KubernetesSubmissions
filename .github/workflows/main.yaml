@@ -8,13 +8,14 @@ on:
       - '*'
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   REGISTRY: europe-north1-docker.pkg.dev
   REPOSITORY: my-repository
+  CONFIG_REPOSITORY: Fei-Linnea/KubernetesSubmissions-config
 
 jobs:
   build-publish:
@@ -23,7 +24,7 @@ jobs:
     environment: GKE_PROJECT
 
     steps:
-      - name: Checkout
+      - name: Checkout code repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -46,83 +47,62 @@ jobs:
       - name: Build and push todo-app
         run: |
           IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/todo-app:$GITHUB_SHA"
-
-          docker build \
-            -t "$IMAGE_TAG" \
-            the_project/base/todo-app
-
+          docker build -t "$IMAGE_TAG" the_project/base/todo-app
           docker push "$IMAGE_TAG"
-
           echo "TODO_APP_IMAGE=$IMAGE_TAG" >> "$GITHUB_ENV"
 
       - name: Build and push todo-backend
         run: |
           IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/todo-backend:$GITHUB_SHA"
-
-          docker build \
-            -t "$IMAGE_TAG" \
-            the_project/base/todo-backend
-
+          docker build -t "$IMAGE_TAG" the_project/base/todo-backend
           docker push "$IMAGE_TAG"
-
           echo "TODO_BACKEND_IMAGE=$IMAGE_TAG" >> "$GITHUB_ENV"
 
       - name: Build and push broadcaster
         run: |
           IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/broadcaster:$GITHUB_SHA"
-
-          docker build \
-            -t "$IMAGE_TAG" \
-            the_project/base/broadcaster
-
+          docker build -t "$IMAGE_TAG" the_project/base/broadcaster
           docker push "$IMAGE_TAG"
-
           echo "BROADCASTER_IMAGE=$IMAGE_TAG" >> "$GITHUB_ENV"
 
-      - name: Update staging image versions
+      - name: Checkout configuration repository
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.CONFIG_REPOSITORY }}
+          token: ${{ secrets.CONFIG_REPO_TOKEN }}
+          path: config
+
+      - name: Update staging configuration
         if: github.ref == 'refs/heads/main'
         run: |
-          cd the_project/overlays/staging
+          cd config/the_project/overlays/staging
+          kustomize edit set image TODO-APP/IMAGE=${{ env.TODO_APP_IMAGE }}
+          kustomize edit set image TODO-BACKEND/IMAGE=${{ env.TODO_BACKEND_IMAGE }}
+          kustomize edit set image flhaka/broadcaster=${{ env.BROADCASTER_IMAGE }}
 
-          kustomize edit set image \
-            TODO-APP/IMAGE=${{ env.TODO_APP_IMAGE }}
-
-          kustomize edit set image \
-            TODO-BACKEND/IMAGE=${{ env.TODO_BACKEND_IMAGE }}
-
-          kustomize edit set image \
-            flhaka/broadcaster=${{ env.BROADCASTER_IMAGE }}
-
-      - name: Commit staging release
+      - name: Commit staging configuration
         if: github.ref == 'refs/heads/main'
         uses: EndBug/add-and-commit@v10
         with:
+          cwd: ./config
           add: 'the_project/overlays/staging/kustomization.yaml'
           message: 'Release staging ${{ github.sha }} [skip ci]'
 
-      - name: Switch to main branch for production release
+      - name: Update production configuration
         if: startsWith(github.ref, 'refs/tags/')
         run: |
+          cd config
           git fetch origin main
           git checkout main
-
-      - name: Update production image versions
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
           cd the_project/overlays/production
+          kustomize edit set image TODO-APP/IMAGE=${{ env.TODO_APP_IMAGE }}
+          kustomize edit set image TODO-BACKEND/IMAGE=${{ env.TODO_BACKEND_IMAGE }}
+          kustomize edit set image flhaka/broadcaster=${{ env.BROADCASTER_IMAGE }}
 
-          kustomize edit set image \
-            TODO-APP/IMAGE=${{ env.TODO_APP_IMAGE }}
-
-          kustomize edit set image \
-            TODO-BACKEND/IMAGE=${{ env.TODO_BACKEND_IMAGE }}
-
-          kustomize edit set image \
-            flhaka/broadcaster=${{ env.BROADCASTER_IMAGE }}
-
-      - name: Commit production release
+      - name: Commit production configuration
         if: startsWith(github.ref, 'refs/tags/')
         uses: EndBug/add-and-commit@v10
         with:
+          cwd: ./config
           add: 'the_project/overlays/production/kustomization.yaml'
           message: 'Release production ${{ github.ref_name }} (${{ github.sha }}) [skip ci]'
