@@ -4,6 +4,6 @@ metadata:
   name: log-output-config
   namespace: exercises
 data:
-  MESSAGE: "hello world"
+  MESSAGE: "hello from GitOps"
   information.txt: |
     this text is from file
