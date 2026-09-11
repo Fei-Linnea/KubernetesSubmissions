@@ -5,6 +5,6 @@ metadata:
   namespace: project
 data:
   IMAGE_URL: "https://picsum.photos/1200"
-  IMAGE_CACHE_MINUTES: "10"
+  IMAGE_CACHE_MINUTES: "15"
   TODO_BACKEND: "http://todo-backend-svc:2345/todos"
   IMAGE_DIR: "/usr/src/app/files"
