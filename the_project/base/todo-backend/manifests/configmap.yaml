@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: todo-backend-config
-  namespace: project
-data:
-  MAX_LENGTH: "140"
-  POSTGRES_HOST: "postgres-todo-svc"
-  POSTGRES_PORT: "5432"
