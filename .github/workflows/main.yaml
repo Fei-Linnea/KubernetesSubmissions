@@ -1,94 +1,128 @@
-name: Release application
+name: Build and publish application
 
 on:
   push:
     branches:
-      - '**'
+      - main
+    tags:
+      - '*'
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_CLUSTER: dwk-cluster
-  GKE_ZONE: europe-north1-b
   REGISTRY: europe-north1-docker.pkg.dev
   REPOSITORY: my-repository
-  BRANCH: ${{ github.ref_name }}
 
 jobs:
-  build-publish-deploy:
-    name: Build, Publish and Deploy
+  build-publish:
+    name: Build, Push and Release
     runs-on: ubuntu-latest
     environment: GKE_PROJECT
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-      - name: 'Authenticate to Google Cloud'
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}"
           service_account: "${{ secrets.SERVICE_ACCOUNT }}"
 
-      - name: 'Set up Cloud SDK'
+      - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
 
-      - name: 'Use gcloud CLI'
-        run: gcloud info
-
-      - name: 'Configure Docker for Artifact Registry'
+      - name: Configure Docker for Artifact Registry
         run: gcloud --quiet auth configure-docker $REGISTRY
-
-      - name: 'Get GKE credentials'
-        uses: google-github-actions/get-gke-credentials@v3
-        with:
-          cluster_name: ${{ env.GKE_CLUSTER }}
-          project_id: ${{ env.PROJECT_ID }}
-          location: ${{ env.GKE_ZONE }}
-
-      - name: 'Form the image name'
-        run: echo "IMAGE_TAG=$REGISTRY/$PROJECT_ID/$REPOSITORY/$IMAGE:$BRANCH-$GITHUB_SHA" >> $GITHUB_ENV
-
-      - name: Build and push todo-app
-        run: |
-          cd the_project/todo-app
-          SAFE_BRANCH=${BRANCH//\//-}
-          IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/todo-app:$SAFE_BRANCH-$GITHUB_SHA"
-          docker build -t $IMAGE_TAG .
-          docker push $IMAGE_TAG
-          echo "TODO_APP_IMAGE=$IMAGE_TAG" >> $GITHUB_ENV
-
-      - name: Build and push todo-backend
-        run: |
-          cd the_project/todo-backend
-          SAFE_BRANCH=${BRANCH//\//-}
-          IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/todo-backend:$SAFE_BRANCH-$GITHUB_SHA"
-          docker build -t $IMAGE_TAG .
-          docker push $IMAGE_TAG
-          echo "TODO_BACKEND_IMAGE=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v3
 
-      - name: Deploy
-        run: |-
-          if [ "$BRANCH" = "main" ]; then
-            NAMESPACE="project"
-          else
-            NAMESPACE="${BRANCH//\//-}"  # Korvaa / merkillä -
-          fi
-          echo "Deploying to namespace: $NAMESPACE"
-          kubectl create namespace $NAMESPACE || true
-          kubectl config set-context --current --namespace=$NAMESPACE
-          cd the_project
-          kustomize edit set namespace $NAMESPACE
-          kustomize edit set image TODO-APP/IMAGE=${{ env.TODO_APP_IMAGE }}
-          kustomize edit set image TODO-BACKEND/IMAGE=${{ env.TODO_BACKEND_IMAGE }}
-          kustomize build . | kubectl apply -f -
-          kubectl rollout status deployment/todo-app -n $NAMESPACE
-          kubectl rollout status deployment/todo-backend -n $NAMESPACE
-          kubectl get pods -n $NAMESPACE
-          kubectl get services -n $NAMESPACE
+      - name: Build and push todo-app
+        run: |
+          IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/todo-app:$GITHUB_SHA"
+
+          docker build \
+            -t "$IMAGE_TAG" \
+            the_project/base/todo-app
+
+          docker push "$IMAGE_TAG"
+
+          echo "TODO_APP_IMAGE=$IMAGE_TAG" >> "$GITHUB_ENV"
+
+      - name: Build and push todo-backend
+        run: |
+          IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/todo-backend:$GITHUB_SHA"
+
+          docker build \
+            -t "$IMAGE_TAG" \
+            the_project/base/todo-backend
+
+          docker push "$IMAGE_TAG"
+
+          echo "TODO_BACKEND_IMAGE=$IMAGE_TAG" >> "$GITHUB_ENV"
+
+      - name: Build and push broadcaster
+        run: |
+          IMAGE_TAG="$REGISTRY/$PROJECT_ID/$REPOSITORY/broadcaster:$GITHUB_SHA"
+
+          docker build \
+            -t "$IMAGE_TAG" \
+            the_project/base/broadcaster
+
+          docker push "$IMAGE_TAG"
+
+          echo "BROADCASTER_IMAGE=$IMAGE_TAG" >> "$GITHUB_ENV"
+
+      - name: Update staging image versions
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd the_project/overlays/staging
+
+          kustomize edit set image \
+            TODO-APP/IMAGE=${{ env.TODO_APP_IMAGE }}
+
+          kustomize edit set image \
+            TODO-BACKEND/IMAGE=${{ env.TODO_BACKEND_IMAGE }}
+
+          kustomize edit set image \
+            flhaka/broadcaster=${{ env.BROADCASTER_IMAGE }}
+
+      - name: Commit staging release
+        if: github.ref == 'refs/heads/main'
+        uses: EndBug/add-and-commit@v10
+        with:
+          add: 'the_project/overlays/staging/kustomization.yaml'
+          message: 'Release staging ${{ github.sha }} [skip ci]'
+
+      - name: Switch to main branch for production release
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          git fetch origin main
+          git checkout main
+
+      - name: Update production image versions
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd the_project/overlays/production
+
+          kustomize edit set image \
+            TODO-APP/IMAGE=${{ env.TODO_APP_IMAGE }}
+
+          kustomize edit set image \
+            TODO-BACKEND/IMAGE=${{ env.TODO_BACKEND_IMAGE }}
+
+          kustomize edit set image \
+            flhaka/broadcaster=${{ env.BROADCASTER_IMAGE }}
+
+      - name: Commit production release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: EndBug/add-and-commit@v10
+        with:
+          add: 'the_project/overlays/production/kustomization.yaml'
+          message: 'Release production ${{ github.ref_name }} (${{ github.sha }}) [skip ci]'

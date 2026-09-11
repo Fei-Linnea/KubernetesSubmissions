@@ -9,3 +9,14 @@ namespace: staging
 patches:
   - path: broadcaster-patch.yaml
   - path: remove-backup-cronjob.yaml
+
+images:
+  - name: TODO-APP/IMAGE
+    newName: europe-north1-docker.pkg.dev/dwk-gke-503613/my-repository/todo-app
+    newTag: latest
+  - name: TODO-BACKEND/IMAGE
+    newName: europe-north1-docker.pkg.dev/dwk-gke-503613/my-repository/todo-backend
+    newTag: latest
+  - name: flhaka/broadcaster
+    newName: europe-north1-docker.pkg.dev/dwk-gke-503613/my-repository/broadcaster
+    newTag: latest

@@ -19,7 +19,9 @@ images:
   - name: TODO-APP/IMAGE
     newName: flhaka/todo-app
     newTag: latest
-
   - name: TODO-BACKEND/IMAGE
     newName: flhaka/todo-backend
+    newTag: latest
+  - name: flhaka/broadcaster
+    newName: flhaka/broadcaster
     newTag: latest
