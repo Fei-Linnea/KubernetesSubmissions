@@ -1,0 +1,11 @@
+{
+  "name": "dummy-site-controller",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^1.4.0"
+  }
+}
