@@ -64,9 +64,24 @@ async function fetchWebsite(url) {
   return html;
 }
 
+function responseBody(response) {
+  return response?.body ?? response;
+}
+
+function statusCode(error) {
+  return (
+    error?.response?.statusCode ??
+    error?.response?.status ??
+    error?.statusCode ??
+    error?.code ??
+    error?.body?.code
+  );
+}
+
 async function createOrReplace(read, create, replace, resource) {
   try {
     const existing = await read(resource.metadata.name, resource.metadata.namespace);
+    const existingBody = responseBody(existing);
     await replace(
       resource.metadata.name,
       resource.metadata.namespace,
@@ -74,12 +89,12 @@ async function createOrReplace(read, create, replace, resource) {
         ...resource,
         metadata: {
           ...resource.metadata,
-          resourceVersion: existing.body.metadata.resourceVersion,
+          resourceVersion: existingBody.metadata.resourceVersion,
         },
       }
     );
   } catch (error) {
-    if (error.response?.statusCode !== 404) {
+    if (statusCode(error) !== 404) {
       throw error;
     }
     await create(resource.metadata.namespace, resource);
@@ -87,7 +102,7 @@ async function createOrReplace(read, create, replace, resource) {
 }
 
 function buildResources(site, html) {
-  const namespace = site.metadata.namespace;
+  const namespace = site.metadata.namespace || "default";
   const name = resourceName(site.metadata.name);
   const owner = ownerReference(site);
   const siteLabels = labels(site);
