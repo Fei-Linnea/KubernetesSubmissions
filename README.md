@@ -59,3 +59,7 @@
 - [4.9.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/4.9)
 - [4.10.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/4.10)
 - KubernetesSubmissions-config repo: [KubernetesSubmissions-config](https://github.com/Fei-Linnea/KubernetesSubmissions-config)
+
+### Chapter 6
+
+- [5.1.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/5.1)
