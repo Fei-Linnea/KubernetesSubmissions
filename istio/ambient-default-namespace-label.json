@@ -1,0 +1,7 @@
+{
+  "metadata": {
+    "labels": {
+      "istio.io/dataplane-mode": "ambient"
+    }
+  }
+}

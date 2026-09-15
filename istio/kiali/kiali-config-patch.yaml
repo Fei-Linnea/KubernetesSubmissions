@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kiali
+  namespace: istio-system
+data:
+  config.yaml: |
+    auth:
+      strategy: anonymous
+    deployment:
+      accessible_namespaces:
+        - '**'
+    external_services:
+      istio:
+        root_namespace: istio-system
+      prometheus:
+        enabled: true
+        url: http://prom-prometheus-server.monitoring.svc.cluster.local:80
+    server:
+      port: 20001
+      web_root: /kiali
