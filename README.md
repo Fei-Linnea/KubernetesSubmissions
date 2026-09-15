@@ -41,7 +41,6 @@
 - [3.6.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/3.6)
 - [3.7.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/3.7)
 - [3.8.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/3.8)
-- 3.9
 - [3.10.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/3.10)
 - [3.11.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/3.11)
 - [3.12.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/3.12)
@@ -63,3 +62,4 @@
 ### Chapter 6
 
 - [5.1.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/5.1)
+- [5.2.](https://github.com/Fei-Linnea/KubernetesSubmissions/tree/5.2)
